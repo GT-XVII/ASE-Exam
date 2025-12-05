@@ -140,7 +140,7 @@ public class MathPlotTest {
         mp.setExpression("x^2", MathPlot.ExpressionFormat.AOS);
 
         // Act
-        double area = mp.area();
+        double area = mp.area(MathPlot.AreaType.Trapezoidal);
 
         // Assert  ∫_{-5}^{5} x^2 dx = 2 * 5^3 / 3 ≈ 83.333...
         assertTrue(area > 80.0 && area < 86.0,
@@ -154,10 +154,40 @@ public class MathPlotTest {
         mp.setExpression("x", MathPlot.ExpressionFormat.AOS);
 
         // Act
-        double area = mp.area();
+        double area = mp.area(MathPlot.AreaType.Trapezoidal);
 
         // Assert  ∫_{-a}^{a} x dx = 0
         assertEquals(0.0, area, 1e-1, "Area of x over symmetric interval should be ~0");
+    }
+
+    @Test
+    public void testArea_DefaultMatchesRectangular() {
+        // Arrange
+        MathPlot mp = new MathPlot();
+        mp.setExpression("x^2", MathPlot.ExpressionFormat.AOS);
+
+        // Act
+        double areaRect = mp.area(MathPlot.AreaType.Rectangular);
+        double areaDefault = mp.area(); // no-arg, used by App.java
+
+        // Assert
+        assertEquals(areaRect, areaDefault, 1e-3,
+                "Default area() should use the rectangular rule");
+    }
+
+    @Test
+    public void testArea_RectangularAndTrapezoidalDifferForCurvedFunction() {
+        // Arrange
+        MathPlot mp = new MathPlot();
+        mp.setExpression("exp(x)", MathPlot.ExpressionFormat.AOS);
+
+        // Act
+        double rect = mp.area(MathPlot.AreaType.Rectangular);
+        double trap = mp.area(MathPlot.AreaType.Trapezoidal);
+
+        // Assert
+        assertNotEquals(rect, trap,
+                "Rectangular and trapezoidal area should differ for a non-linear function like exp(x)");
     }
 
     // ---------- Error handling ----------
@@ -170,7 +200,7 @@ public class MathPlotTest {
         // Act
         mp.setExpression("x +", MathPlot.ExpressionFormat.RPN); // invalid RPN
         List<String> printed = mp.print(MathPlot.ExpressionFormat.AOS);
-        double area = mp.area();
+        double area = mp.area(MathPlot.AreaType.Trapezoidal);
 
         // Assert
         assertTrue(printed.isEmpty(), "Invalid expression should result in no printable output");
@@ -229,7 +259,7 @@ public class MathPlotTest {
 
         // Act
         mp.setExpression("1/x", MathPlot.ExpressionFormat.AOS);
-        double area = mp.area();
+        double area = mp.area(MathPlot.AreaType.Trapezoidal);
 
         // Assert
         assertTrue(Double.isNaN(area) || Double.isInfinite(area),
@@ -244,7 +274,7 @@ public class MathPlotTest {
         // Act
         mp.setExpression("foo(x)", MathPlot.ExpressionFormat.AOS);
         List<String> printed = mp.print(MathPlot.ExpressionFormat.AOS);
-        double area = mp.area();
+        double area = mp.area(MathPlot.AreaType.Trapezoidal);
 
         // Assert
         assertTrue(printed.isEmpty());
@@ -263,6 +293,18 @@ public class MathPlotTest {
         // Act & Assert
         assertDoesNotThrow(() -> mp.plot(canvas, MathPlot.PlotType.Cartesian),
                 "Plotting sin(x) in Cartesian coordinates should not throw");
+    }
+
+    @Test
+    public void testPlot_Cartesian_Rpn_XSquared_DoesNotThrow() {
+        // Arrange
+        MathPlot mp = new MathPlot();
+        mp.setExpression("x 2 ^", MathPlot.ExpressionFormat.RPN);
+        Canvas canvas = new Canvas(400, 300);
+
+        // Act & Assert
+        assertDoesNotThrow(() -> mp.plot(canvas, MathPlot.PlotType.Cartesian),
+                "Plotting x^2 given in RPN should not throw");
     }
 
     @Test
