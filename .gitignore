@@ -3,8 +3,11 @@
 **/bin/
 **/target/
 *.dSYM
+*.class
 *.bin
 *.out
+.classpath
+.project
 MathPlot/plot.png
 **/node_modules/
 **/dist/
